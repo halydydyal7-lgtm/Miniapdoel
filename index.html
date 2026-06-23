@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>دوئل گرافیکی</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: #f0f0f0;
+        }
+        .container {
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .hidden { display: none !important; }
+        
+        .user-header {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        .user-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .user-info { flex: 1; min-width: 0; }
+        .user-info .name { color: #fff; font-size: 18px; font-weight: 600; }
+        .user-info .details { color: #aaa; font-size: 13px; margin-top: 2px; }
+        .user-info .details span { margin-left: 8px; }
+
+        .hamburger {
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: #ddd;
+            border-radius: 2px;
+        }
+        .hamburger:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+
+        .dropdown {
+            position: absolute;
+            top: 60px;
+            left: 0; right: 0;
+            background: #2a2a2a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 8px 0;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+        .dropdown.open { display: block; }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            color: #eee;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: right;
+        }
+        .dropdown-item:hover { background: rgba(255,255,255,0.06); }
+        .dropdown-item .icon { font-size: 20px; }
+
+        .balance-card {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .balance-card .label { color: #ccc; font-size: 16px; }
+        .balance-card .value { color: #ffd700; font-size: 28px; font-weight: 700; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .stat-box .num { font-size: 24px; font-weight: 700; color: #fff; }
+        .stat-box .lbl { font-size: 13px; color: #aaa; margin-top: 2px; }
+        .stat-box.win .num { color: #4ade80; }
+        .stat-box.draw .num { color: #fbbf24; }
+        .stat-box.lose .num { color: #f87171; }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .menu-btn {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 18px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .menu-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+        .menu-btn .icon { font-size: 32px; display: block; margin-bottom: 6px; }
+        .menu-btn .title { font-size: 16px; font-weight: 600; }
+        .menu-btn .sub { display: none; }
+
+        .menu-btn.primary { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.3); }
+        .menu-btn.primary .title { color: #a5b4fc; }
+        .menu-btn.gold { background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.25); }
+        .menu-btn.gold .title { color: #fbbf24; }
+        .menu-btn.green { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.2); }
+        .menu-btn.green .title { color: #4ade80; }
+        .menu-btn.orange { background: rgba(251,146,60,0.15); border-color: rgba(251,146,60,0.2); }
+        .menu-btn.orange .title { color: #fb923c; }
+        .menu-btn.pink { background: rgba(244,114,182,0.15); border-color: rgba(244,114,182,0.2); }
+        .menu-btn.pink .title { color: #f472b6; }
+        .menu-btn.purple { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.2); }
+        .menu-btn.purple .title { color: #a78bfa; }
+
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 18px 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 14px;
+            display: none;
+        }
+        .section.active { display: block; }
+        .section-title { color: #ccc; font-size: 16px; text-align: center; margin-bottom: 16px; font-weight: 600; }
+
+        .section-back {
+            color: #a5b4fc;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 12px;
+            padding: 8px 18px;
+            background: rgba(99,102,241,0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(99,102,241,0.25);
+            transition: 0.2s;
+        }
+        .section-back:hover { background: rgba(99,102,241,0.3); }
+
+        .bet-options, .round-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .bet-options .bet-btn, .round-options .round-btn {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ddd;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 70px;
+            text-align: center;
+        }
+        .bet-options .bet-btn:active, .round-options .round-btn:active { transform: scale(0.95); }
+        .bet-options .bet-btn.active, .round-options .round-btn.active {
+            background: rgba(255,215,0,0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+
+        .choice-row {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 16px 0;
+        }
+        .choice-btn {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            font-size: 38px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        .choice-btn:active { transform: scale(0.92); }
+        .choice-btn.selected {
+            border-color: #ffd700;
+            background: rgba(255,215,0,0.2);
+            box-shadow: 0 0 30px rgba(255,215,0,0.2);
+        }
+        .choice-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; color: #ccc; font-size: 14px; margin-bottom: 4px; }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.06);
+            color: #f0f0f0;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: rgba(99,102,241,0.5);
+            background: rgba(255,255,255,0.08);
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group .card-info {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.15);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            color: #fbbf24;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .status-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.06);
+            margin: 12px 0;
+        }
+        .status-box .text { color: #ddd; font-size: 15px; line-height: 1.6; white-space: pre-line; }
+        .status-box .text.success { color: #4ade80; }
+        .status-box .text.error { color: #f87171; }
+        .status-box .text.waiting { color: #fbbf24; }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .action-row .action-btn {
+            flex: 1;
+            padding: 14px 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+            min-width: 80px;
+        }
+        .action-row .action-btn:active { transform: scale(0.97); }
+        .action-row .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .action-row .action-btn.primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .action-row .action-btn.danger { background: rgba(239,68,68,0.3); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+        .action-row .action-btn.success { background: rgba(74,222,128,0.2); color: #4ade80; border: 1px solid rgba(74,222,128,0.15); }
+        .action-row .action-btn.orange { background: rgba(251,146,60,0.2); color: #fb923c; border: 1px solid rgba(251,146,60,0.15); }
+        .action-row .action-btn.gold { background: rgba(255,215,0,0.2); color: #fbbf24; border: 1px solid rgba(255,215,0,0.15); }
+        .action-row .action-btn.purple { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.15); }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-input-wrapper .fake-btn {
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            color: #a5b4fc;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .file-input-wrapper .fake-btn:active { transform: scale(0.97); background: rgba(99,102,241,0.25); }
+        .file-name {
+            color: #888;
+            font-size: 13px;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 15px;
+            z-index: 999;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: #fff; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">در حال ارتباط با ربات...</div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="user-header">
+            <div class="user-avatar" id="userAvatar">👤</div>
+            <div class="user-info">
+                <div class="name" id="userName">کاربر</div>
+                <div class="details">
+                    <span id="userId">🆔 ---</span>
+                    <span id="userUsername">@---</span>
+                </div>
+            </div>
+            <div class="hamburger" id="hamburgerBtn">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="dropdown" id="dropdownMenu">
+                <a class="dropdown-item" href="https://t.me/Poshtibanitest1234" target="_blank">
+                    <span class="icon">📩</span> ارسال پیام به پشتیبانی
+                </a>
+                <a class="dropdown-item" href="https://t.me/test123412340" target="_blank">
+                    <span class="icon">📢</span> عضویت در کانال
+                </a>
+            </div>
+        </div>
+
+        <!-- Balance -->
+        <div class="balance-card">
+            <span class="label">🪙 موجودی</span>
+            <span class="value" id="balanceDisplay">0</span>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-box win"><div class="num" id="winsDisplay">0</div><div class="lbl">🏆 برد</div></div>
+            <div class="stat-box draw"><div class="num" id="drawsDisplay">0</div><div class="lbl">⚖️ مساوی</div></div>
+            <div class="stat-box lose"><div class="num" id="losesDisplay">0</div><div class="lbl">📉 باخت</div></div>
+        </div>
+
+        <!-- Main Menu -->
+        <div class="menu-grid" id="mainMenu">
+            <div class="menu-btn primary" data-section="game"><span class="icon">⚔️</span><span class="title">شروع دوئل</span></div>
+            <div class="menu-btn gold" data-section="invite"><span class="icon">👥</span><span class="title">دعوت دوستان</span></div>
+            <div class="menu-btn green" data-section="purchase"><span class="icon">🪙</span><span class="title">خرید سکه</span></div>
+            <div class="menu-btn orange" data-section="withdraw"><span class="icon">🏦</span><span class="title">برداشت وجه</span></div>
+            <div class="menu-btn pink" data-section="balance"><span class="icon">💰</span><span class="title">موجودی من</span></div>
+            <div class="menu-btn purple" data-section="support"><span class="icon">📞</span><span class="title">پشتیبانی</span></div>
+        </div>
+
+        <!-- ===== GAME ===== -->
+        <div class="section" id="section-game">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">⚔️ دوئل سنگ · کاغذ · قیچی</div>
+            <div id="stepBet">
+                <div style="color:#ccc; font-size:14px; margin-bottom:6px;">💰 مبلغ دوئل را انتخاب کنید:</div>
+                <div class="bet-options" id="betOptions">
+                    <div class="bet-btn active" data-amount="5000">۵۰۰۰</div>
+                    <div class="bet-btn" data-amount="20000">۲۰۰۰۰</div>
+                    <div class="bet-btn" data-amount="50000">۵۰۰۰۰</div>
+                    <div class="bet-btn" data-amount="100000">۱۰۰۰۰۰</div>
+                    <div class="bet-btn" data-amount="200000">۲۰۰۰۰۰</div>
+                    <div class="bet-btn" data-amount="500000">۵۰۰۰۰۰</div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn primary" id="stepBetNext">ادامه →</button>
+                </div>
+            </div>
+            <div id="stepRound" style="display:none;">
+                <div style="color:#ccc; font-size:14px; margin-bottom:6px;">🎯 تعداد راندها:</div>
+                <div class="round-options" id="roundOptions">
+                    <div class="round-btn active" data-round="3">۳ راند</div>
+                    <div class="round-btn" data-round="5">۵ راند</div>
+                    <div class="round-btn" data-round="7">۷ راند</div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn primary" id="stepRoundNext">شروع دوئل</button>
+                    <button class="action-btn danger" id="stepRoundBack">← برگشت</button>
+                </div>
+            </div>
+            <div id="stepGame" style="display:none;">
+                <div class="choice-row" id="choiceRow">
+                    <button class="choice-btn" data-choice="rock">🪨</button>
+                    <button class="choice-btn" data-choice="paper">📄</button>
+                    <button class="choice-btn" data-choice="scissors">✂️</button>
+                </div>
+                <div class="status-box"><span class="text" id="gameStatus">🎮 آماده بازی</span></div>
+                <div class="action-row">
+                    <button class="action-btn danger" id="cancelGameBtn">❌ لغو دوئل</button>
+                </div>
+                <div style="font-size:13px;color:#888;text-align:center;margin-top:10px;">⏳ امروز: <span id="todayGames">0</span> از ۱۰ بازی</div>
+            </div>
+        </div>
+
+        <!-- ===== INVITE ===== -->
+        <div class="section" id="section-invite">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">👥 دعوت دوستان</div>
+            <div class="status-box"><span class="text" id="inviteStatus">برای دریافت لینک کلیک کنید</span></div>
+            <div class="action-row">
+                <button class="action-btn gold" id="getInviteBtn">🔗 دریافت لینک دعوت</button>
+                <button class="action-btn gold" id="copyInviteBtn" style="display:none;">📋 کپی لینک</button>
+            </div>
+            <div style="font-size:14px;color:#aaa;text-align:center;margin-top:10px;">🎁 به ازای هر دعوت، ۱ سکه پاداش</div>
+        </div>
+
+        <!-- ===== PURCHASE ===== -->
+        <div class="section" id="section-purchase">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">🪙 خرید سکه</div>
+            <div class="form-group">
+                <label>🏦 شماره کارت برای واریز</label>
+                <div class="card-info">
+                    6219861851166826<br>
+                    <span style="font-size:14px; color:#aaa;">به نام: سید محمد مهدی حسنی</span>
+                </div>
+            </div>
+            <div class="bet-options" id="purchaseOptions">
+                <div class="bet-btn active" data-amount="5000">۵۰۰۰</div>
+                <div class="bet-btn" data-amount="20000">۲۰۰۰۰</div>
+                <div class="bet-btn" data-amount="50000">۵۰۰۰۰</div>
+                <div class="bet-btn" data-amount="100000">۱۰۰۰۰۰</div>
+                <div class="bet-btn" data-amount="500000">۵۰۰۰۰۰</div>
+            </div>
+            <div class="form-group">
+                <label>📤 رسید واریز (انتخاب تصویر)</label>
+                <div class="file-input-wrapper">
+                    <div class="fake-btn" id="fakeReceiptBtn">📎 انتخاب رسید از گالری</div>
+                    <input type="file" id="receiptFileInput" accept="image/*">
+                </div>
+                <div class="file-name" id="receiptFileName">هیچ فایلی انتخاب نشده</div>
+            </div>
+            <div class="form-group">
+                <label>📝 توضیحات (اختیاری)</label>
+                <textarea id="receiptDesc" placeholder="شماره پیگیری یا توضیحات..."></textarea>
+            </div>
+            <div class="status-box"><span class="text" id="purchaseStatus">مبلغ را انتخاب کنید و رسید را ارسال کنید</span></div>
+            <div class="action-row"><button class="action-btn success" id="purchaseBtn">📩 ارسال درخواست خرید</button></div>
+        </div>
+
+        <!-- ===== WITHDRAW ===== -->
+        <div class="section" id="section-withdraw">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">🏦 برداشت وجه</div>
+            <div class="form-group"><label>💳 شماره کارت شما</label><input type="text" id="withdrawCard" placeholder="۱۶ رقم بدون فاصله" maxlength="16" inputmode="numeric"></div>
+            <div class="form-group"><label>💰 مبلغ برداشت (سکه)</label><input type="number" id="withdrawAmount" placeholder="مبلغ به سکه" min="0"></div>
+            <div style="font-size:14px;color:#aaa;text-align:center;margin-bottom:12px;">حداقل: <span id="minWithdraw">۱۰,۰۰۰</span> | حداکثر: <span id="maxWithdraw">۲۵۰,۰۰۰</span> سکه</div>
+            <div class="status-box"><span class="text" id="withdrawStatus">اطلاعات را وارد کنید</span></div>
+            <div class="action-row"><button class="action-btn orange" id="withdrawBtn">📤 ارسال درخواست برداشت</button></div>
+        </div>
+
+        <!-- ===== BALANCE ===== -->
+        <div class="section" id="section-balance">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">💰 موجودی و آمار</div>
+            <div class="status-box"><span class="text" id="balanceStatus">برای مشاهده کلیک کنید</span></div>
+            <div class="action-row"><button class="action-btn primary" id="refreshBalanceBtn">🔄 دریافت موجودی</button></div>
+        </div>
+
+        <!-- ===== SUPPORT ===== -->
+        <div class="section" id="section-support">
+            <span class="section-back" onclick="showSection('main')">← بازگشت</span>
+            <div class="section-title">📞 پشتیبانی</div>
+            <div class="status-box"><span class="text" id="supportStatus">ارتباط با پشتیبانی</span></div>
+            <div class="action-row"><button class="action-btn purple" id="supportBtn">📩 ارسال پیام به پشتیبانی</button></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ================================================================
+        // مینی‌اپ نسخه نهایی - کاملاً عملیاتی
+        // ================================================================
+
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const $ = id => document.getElementById(id);
+        const loadingOverlay = $('loadingOverlay');
+        const toast = $('toast');
+
+        // ===== وضعیت =====
+        const state = {
+            balance: 0,
+            wins: 0,
+            draws: 0,
+            loses: 0,
+            todayGames: 0,
+            userId: null,
+            username: null,
+            firstName: null,
+            betAmount: 5000,
+            purchaseAmount: 5000,
+            selectedRound: 3,
+            selectedChoice: null,
+            inGame: false,
+            waitingForOpponent: false,
+            gameId: null,
+            round: 0,
+            totalRounds: 3,
+            myScore: 0,
+            oppScore: 0,
+            roundFinished: false,
+            inviteLink: '',
+            isWaitingForResponse: false,
+            purchaseFile: null,
+            minWithdraw: 10000,
+            maxWithdraw: 250000,
+            currentStep: 'bet'
+        };
+
+        // ===== Loading =====
+        function showLoading(show, text = 'در حال ارتباط با ربات...') {
+            if (show) {
+                loadingOverlay.querySelector('.loading-text').textContent = text;
+                loadingOverlay.classList.add('show');
+            } else {
+                loadingOverlay.classList.remove('show');
+            }
+        }
+
+        // ===== Toast =====
+        function showToast(msg, type = 'info') {
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            toast.style.background = type === 'error' ? 'rgba(239,68,68,0.9)' :
+                type === 'success' ? 'rgba(74,222,128,0.9)' : 'rgba(0,0,0,0.9)';
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // ===== ارسال به ربات =====
+        function sendToBot(data) {
+            if (state.isWaitingForResponse) {
+                showToast('⏳ لطفاً صبر کنید...', 'info');
+                return;
+            }
+            try {
+                state.isWaitingForResponse = true;
+                tg.sendData(JSON.stringify(data));
+                console.log('📤 ارسال:', data);
+            } catch (e) {
+                console.error('⚠️ خطا در ارسال:', e);
+                state.isWaitingForResponse = false;
+                showToast('⚠️ خطا در ارتباط با ربات!', 'error');
+                showLoading(false);
+            }
+        }
+
+        // ===== بروزرسانی UI =====
+        function updateUI() {
+            $('balanceDisplay').textContent = state.balance.toLocaleString();
+            $('winsDisplay').textContent = state.wins;
+            $('drawsDisplay').textContent = state.draws;
+            $('losesDisplay').textContent = state.loses;
+            $('todayGames').textContent = state.todayGames;
+        }
+
+        function showStatus(el, text, type = 'info') {
+            if (!el) return;
+            el.textContent = text;
+            el.className = 'text';
+            if (type === 'success') el.classList.add('success');
+            else if (type === 'error') el.classList.add('error');
+            else if (type === 'waiting') el.classList.add('waiting');
+            else el.classList.remove('success', 'error', 'waiting');
+        }
+
+        // ===== نمایش بخش‌ها =====
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            const mainMenu = $('mainMenu');
+            if (section === 'main') {
+                mainMenu.style.display = 'grid';
+                return;
+            }
+            mainMenu.style.display = 'none';
+            const target = $(`section-${section}`);
+            if (target) target.classList.add('active');
+            
+            if (section === 'invite') {
+                $('inviteStatus').textContent = 'برای دریافت لینک کلیک کنید';
+                $('copyInviteBtn').style.display = 'none';
+                $('getInviteBtn').style.display = 'block';
+            }
+            if (section === 'balance') {
+                $('balanceStatus').textContent = 'برای مشاهده کلیک کنید';
+            }
+            if (section === 'withdraw') getWithdrawSettings();
+            if (section === 'game') resetGameUI();
+        }
+
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                showSection(this.dataset.section);
+            });
+        });
+
+        // ===== همبرگر =====
+        const hamburgerBtn = $('hamburgerBtn');
+        const dropdownMenu = $('dropdownMenu');
+        hamburgerBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('open');
+        });
+        document.addEventListener('click', function(e) {
+            if (!hamburgerBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('open');
+            }
+        });
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => dropdownMenu.classList.remove('open'));
+        });
+
+        // ===== بازی پلکانی =====
+        const stepBet = $('stepBet');
+        const stepRound = $('stepRound');
+        const stepGame = $('stepGame');
+        const betBtns = document.querySelectorAll('#betOptions .bet-btn');
+        const roundBtns = document.querySelectorAll('#roundOptions .round-btn');
+        const choiceBtns = document.querySelectorAll('.choice-btn');
+        const gameStatus = $('gameStatus');
+        const cancelGameBtn = $('cancelGameBtn');
+
+        function resetGameUI() {
+            state.inGame = false;
+            state.waitingForOpponent = false;
+            state.gameId = null;
+            state.selectedChoice = null;
+            state.round = 0;
+            state.myScore = 0;
+            state.oppScore = 0;
+            state.roundFinished = false;
+            state.currentStep = 'bet';
+            stepBet.style.display = 'block';
+            stepRound.style.display = 'none';
+            stepGame.style.display = 'none';
+            choiceBtns.forEach(b => { b.disabled = true; b.classList.remove('selected'); });
+            showStatus(gameStatus, '🎮 آماده بازی', 'info');
+            document.querySelectorAll('#betOptions .bet-btn, #roundOptions .round-btn').forEach(el => el.style.opacity = '1');
+            cancelGameBtn.classList.add('hidden');
+        }
+
+        $('stepBetNext').addEventListener('click', function() {
+            state.betAmount = parseInt(document.querySelector('#betOptions .bet-btn.active').dataset.amount);
+            if (state.balance < state.betAmount) {
+                showToast(`❌ موجودی کافی نیست! (${state.balance.toLocaleString()} سکه)`, 'error');
+                return;
+            }
+            stepBet.style.display = 'none';
+            stepRound.style.display = 'block';
+            state.currentStep = 'round';
+        });
+
+        $('stepRoundBack').addEventListener('click', function() {
+            stepRound.style.display = 'none';
+            stepBet.style.display = 'block';
+            state.currentStep = 'bet';
+        });
+
+        $('stepRoundNext').addEventListener('click', function() {
+            state.selectedRound = parseInt(document.querySelector('#roundOptions .round-btn.active').dataset.round);
+            if (state.balance < state.betAmount) {
+                showToast(`❌ موجودی کافی نیست! (${state.balance.toLocaleString()} سکه)`, 'error');
+                return;
+            }
+            showLoading(true, '⏳ در حال پیدا کردن حریف...');
+            sendToBot({
+                action: 'graphic_start_duel',
+                bet_amount: state.betAmount,
+                rounds: state.selectedRound
+            });
+            showStatus(gameStatus, '⏳ در حال پیدا کردن حریف...', 'waiting');
+            state.waitingForOpponent = true;
+            stepRound.style.display = 'none';
+            stepGame.style.display = 'block';
+            state.currentStep = 'game';
+            choiceBtns.forEach(b => b.disabled = false);
+            cancelGameBtn.classList.remove('hidden');
+            cancelGameBtn.textContent = '❌ لغو دوئل';
+        });
+
+        cancelGameBtn.addEventListener('click', function() {
+            if (!state.waitingForOpponent && !state.inGame) {
+                showStatus(gameStatus, '⚠️ شما در بازی نیستید!', 'error');
+                return;
+            }
+            showLoading(true, '⏳ در حال لغو...');
+            sendToBot({ action: 'graphic_cancel_duel', game_id: state.gameId });
+            showStatus(gameStatus, '⏳ در حال لغو...', 'waiting');
+        });
+
+        choiceBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (!state.inGame) {
+                    showStatus(gameStatus, '⚠️ ابتدا بازی را شروع کنید!', 'error');
+                    return;
+                }
+                if (state.roundFinished) {
+                    showStatus(gameStatus, '⏳ منتظر راند بعدی...', 'waiting');
+                    return;
+                }
+                if (this.classList.contains('selected')) return;
+                const choice = this.dataset.choice;
+                state.selectedChoice = choice;
+                choiceBtns.forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                const choiceMap = { rock: 'سنگ 🪨', paper: 'کاغذ 📄', scissors: 'قیچی ✂️' };
+                showStatus(gameStatus, `✅ ${choiceMap[choice]} - منتظر حریف...`, 'waiting');
+                showLoading(true, '⏳ ارسال انتخاب...');
+                sendToBot({ action: 'graphic_choice', choice: choice, game_id: state.gameId });
+            });
+        });
+        choiceBtns.forEach(b => b.disabled = true);
+
+        betBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (state.currentStep !== 'bet') return;
+                betBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        roundBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (state.currentStep !== 'round') return;
+                roundBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // ===== خرید =====
+        const purchaseBetBtns = document.querySelectorAll('#purchaseOptions .bet-btn');
+        const receiptFileInput = $('receiptFileInput');
+        const receiptFileName = $('receiptFileName');
+        const purchaseStatus = $('purchaseStatus');
+        const purchaseBtn = $('purchaseBtn');
+
+        purchaseBetBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                purchaseBetBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                state.purchaseAmount = parseInt(this.dataset.amount);
+            });
+        });
+
+        receiptFileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                state.purchaseFile = this.files[0];
+                receiptFileName.textContent = `📎 ${this.files[0].name}`;
+            } else {
+                state.purchaseFile = null;
+                receiptFileName.textContent = 'هیچ فایلی انتخاب نشده';
+            }
+        });
+
+        purchaseBtn.addEventListener('click', function() {
+            if (!state.purchaseFile) {
+                showStatus(purchaseStatus, '❌ لطفاً رسید را انتخاب کنید!', 'error');
+                showToast('❌ لطفاً رسید را انتخاب کنید!', 'error');
+                return;
+            }
+            showLoading(true, '⏳ در حال ارسال رسید...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result.split(',')[1];
+                const desc = $('receiptDesc').value.trim();
+                sendToBot({
+                    action: 'purchase_request',
+                    amount: state.purchaseAmount,
+                    receipt_text: desc || 'رسید تصویری',
+                    receipt_base64: base64,
+                    has_photo: true
+                });
+                showStatus(purchaseStatus, '⏳ در حال ارسال...', 'waiting');
+            };
+            reader.readAsDataURL(state.purchaseFile);
+        });
+
+        // ===== برداشت =====
+        const withdrawStatus = $('withdrawStatus');
+        const withdrawBtn = $('withdrawBtn');
+
+        function getWithdrawSettings() {
+            sendToBot({ action: 'get_withdraw_settings' });
+        }
+
+        withdrawBtn.addEventListener('click', function() {
+            const card = $('withdrawCard').value.replace(/\s/g, '');
+            const amount = parseInt($('withdrawAmount').value);
+            
+            if (card.length !== 16 || !/^\d+$/.test(card)) {
+                showStatus(withdrawStatus, '❌ شماره کارت ۱۶ رقم باید باشد!', 'error');
+                showToast('❌ شماره کارت ۱۶ رقم باید باشد!', 'error');
+                return;
+            }
+            if (!amount || amount < state.minWithdraw) {
+                showStatus(withdrawStatus, `❌ حداقل ${state.minWithdraw.toLocaleString()} سکه!`, 'error');
+                showToast(`❌ حداقل ${state.minWithdraw.toLocaleString()} سکه!`, 'error');
+                return;
+            }
+            if (amount > state.maxWithdraw) {
+                showStatus(withdrawStatus, `❌ حداکثر ${state.maxWithdraw.toLocaleString()} سکه!`, 'error');
+                showToast(`❌ حداکثر ${state.maxWithdraw.toLocaleString()} سکه!`, 'error');
+                return;
+            }
+            if (amount > state.balance) {
+                showStatus(withdrawStatus, `❌ موجودی شما ${state.balance.toLocaleString()} سکه است!`, 'error');
+                showToast(`❌ موجودی شما ${state.balance.toLocaleString()} سکه است!`, 'error');
+                return;
+            }
+            showLoading(true, '⏳ در حال ارسال درخواست...');
+            sendToBot({
+                action: 'withdraw_request',
+                card_number: card,
+                amount: amount
+            });
+            showStatus(withdrawStatus, '⏳ در حال ارسال درخواست...', 'waiting');
+        });
+
+        // ===== دعوت =====
+        const inviteStatus = $('inviteStatus');
+        const getInviteBtn = $('getInviteBtn');
+        const copyInviteBtn = $('copyInviteBtn');
+
+        getInviteBtn.addEventListener('click', function() {
+            showLoading(true, '⏳ در حال دریافت لینک...');
+            sendToBot({ action: 'get_invite_link' });
+            showStatus(inviteStatus, '⏳ در حال دریافت...', 'waiting');
+        });
+
+        copyInviteBtn.addEventListener('click', function() {
+            if (state.inviteLink) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(state.inviteLink).then(() => {
+                        showStatus(inviteStatus, '✅ لینک کپی شد!', 'success');
+                        showToast('✅ لینک کپی شد!', 'success');
+                    }).catch(() => {});
+                } else {
+                    showStatus(inviteStatus, `📋 لینک:\n${state.inviteLink}`, 'info');
+                }
+            }
+        });
+
+        // ===== موجودی =====
+        const balanceStatus = $('balanceStatus');
+        const refreshBalanceBtn = $('refreshBalanceBtn');
+
+        refreshBalanceBtn.addEventListener('click', function() {
+            showLoading(true, '⏳ در حال دریافت اطلاعات...');
+            sendToBot({ action: 'get_user_data' });
+            showStatus(balanceStatus, '⏳ در حال دریافت...', 'waiting');
+        });
+
+        // ===== پشتیبانی =====
+        const supportStatus = $('supportStatus');
+        const supportBtn = $('supportBtn');
+        supportBtn.addEventListener('click', function() {
+            const msg = prompt('📝 پیام خود را برای پشتیبانی وارد کنید:');
+            if (msg && msg.trim()) {
+                showLoading(true, '⏳ در حال ارسال...');
+                sendToBot({ action: 'support_message', text: msg.trim() });
+                showStatus(supportStatus, '⏳ در حال ارسال...', 'waiting');
+            }
+        });
+
+        // ===== دریافت داده از ربات =====
+        function handleBotData(data) {
+            state.isWaitingForResponse = false;
+            showLoading(false);
+            console.log('📥 دریافت از ربات:', data);
+            
+            const action = data.action;
+
+            // ===== اطلاعات کاربر =====
+            if (action === 'user_data') {
+                state.balance = data.balance || 0;
+                state.wins = data.wins || 0;
+                state.draws = data.draws || 0;
+                state.loses = data.loses || 0;
+                state.todayGames = data.today_games || 0;
+                state.userId = data.user_id || state.userId;
+                state.username = data.username || state.username;
+                state.firstName = data.first_name || state.firstName;
+                
+                if (state.firstName) {
+                    $('userName').textContent = state.firstName;
+                    $('userAvatar').textContent = state.firstName.charAt(0).toUpperCase();
+                }
+                if (state.userId) $('userId').textContent = `🆔 ${state.userId}`;
+                if (state.username) $('userUsername').textContent = `@${state.username}`;
+                
+                updateUI();
+                if (balanceStatus) {
+                    showStatus(balanceStatus,
+                        `🪙 ${state.balance.toLocaleString()} سکه\n🏆 ${state.wins} برد | ⚖️ ${state.draws} مساوی | 📉 ${state.loses} باخت\n📊 امروز: ${state.todayGames}/۱۰ بازی`,
+                        'success');
+                }
+                showToast('✅ اطلاعات به‌روز شد', 'success');
+                return;
+            }
+
+            // ===== بازی =====
+            if (action === 'graphic_opponent_found') {
+                state.gameId = data.game_id;
+                state.totalRounds = data.total_rounds || state.selectedRound;
+                state.round = 1;
+                state.inGame = true;
+                state.waitingForOpponent = false;
+                state.myScore = 0;
+                state.oppScore = 0;
+                state.roundFinished = false;
+                choiceBtns.forEach(b => b.disabled = false);
+                showStatus(gameStatus, `🤝 حریف پیدا شد! راند ۱/${state.totalRounds}`, 'success');
+                showToast('🤝 حریف پیدا شد!', 'success');
+                return;
+            }
+
+            if (action === 'graphic_round_result') {
+                const choiceMap = { rock: 'سنگ 🪨', paper: 'کاغذ 📄', scissors: 'قیچی ✂️' };
+                const myChoice = data.my_choice;
+                const oppChoice = data.opp_choice;
+                const winner = data.winner;
+                const myScore = data.my_score;
+                const oppScore = data.opp_score;
+                const roundNum = data.round;
+                const totalRounds = data.total_rounds;
+
+                state.myScore = myScore;
+                state.oppScore = oppScore;
+                state.round = roundNum;
+                state.roundFinished = true;
+
+                let resultText = '';
+                if (winner === 'me') resultText = '🏆 شما این راند را بردید!';
+                else if (winner === 'opponent') resultText = '😔 شما این راند را باختید.';
+                else resultText = '⚖️ این راند مساوی شد.';
+
+                showStatus(gameStatus,
+                    `📊 راند ${roundNum}/${totalRounds}\n` +
+                    `شما: ${choiceMap[myChoice] || myChoice} | حریف: ${choiceMap[oppChoice] || oppChoice}\n` +
+                    `${resultText}\nامتیاز: ${myScore} - ${oppScore}`,
+                    winner === 'me' ? 'success' : (winner === 'opponent' ? 'error' : 'info')
+                );
+
+                choiceBtns.forEach(b => b.disabled = true);
+
+                if (data.game_finished) {
+                    setTimeout(() => handleGameFinished(data), 1500);
+                } else {
+                    setTimeout(() => {
+                        state.roundFinished = false;
+                        choiceBtns.forEach(b => { b.disabled = false; b.classList.remove('selected'); });
+                        state.selectedChoice = null;
+                        showStatus(gameStatus, `🎯 راند ${roundNum + 1}/${totalRounds} - انتخاب کنید`, 'waiting');
+                    }, 2000);
+                }
+                return;
+            }
+
+            if (action === 'graphic_game_finished') {
+                handleGameFinished(data);
+                return;
+            }
+
+            if (action === 'graphic_cancel_success') {
+                resetGameUI();
+                showStatus(gameStatus, '❌ دوئل لغو شد.', 'error');
+                showToast('❌ دوئل لغو شد', 'error');
+                return;
+            }
+
+            if (action === 'graphic_error') {
+                showStatus(gameStatus, `❌ ${data.message || 'خطا!'}`, 'error');
+                showToast(`❌ ${data.message || 'خطا!'}`, 'error');
+                if (data.reset) resetGameUI();
+                return;
+            }
+
+            // ===== خرید =====
+            if (action === 'purchase_request_sent') {
+                showStatus(purchaseStatus, `✅ درخواست خرید ثبت شد!\n🆔 ${data.request_id || ''}\n⏳ منتظر تأیید ادمین...`, 'success');
+                state.purchaseFile = null;
+                receiptFileName.textContent = 'هیچ فایلی انتخاب نشده';
+                receiptFileInput.value = '';
+                $('receiptDesc').value = '';
+                showToast('✅ درخواست خرید ثبت شد', 'success');
+                return;
+            }
+
+            if (action === 'purchase_approved') {
+                state.balance = data.new_balance || state.balance;
+                updateUI();
+                showStatus(purchaseStatus,
+                    `✅ خرید تأیید شد!\n🪙 ${data.coins || 0} سکه اضافه شد.\n💰 موجودی: ${state.balance.toLocaleString()} سکه`,
+                    'success');
+                showToast(`✅ خرید تأیید شد! ${data.coins || 0} سکه اضافه شد`, 'success');
+                return;
+            }
+
+            if (action === 'purchase_rejected') {
+                showStatus(purchaseStatus,
+                    `❌ درخواست خرید رد شد\nدلیل: ${data.reason || 'نامشخص'}\n📞 با پشتیبانی تماس بگیرید`, 'error');
+                showToast(`❌ خرید رد شد: ${data.reason || 'نامشخص'}`, 'error');
+                return;
+            }
+
+            // ===== برداشت =====
+            if (action === 'withdraw_settings') {
+                state.minWithdraw = data.min_withdraw || 10000;
+                state.maxWithdraw = data.max_withdraw || 250000;
+                $('minWithdraw').textContent = state.minWithdraw.toLocaleString();
+                $('maxWithdraw').textContent = state.maxWithdraw.toLocaleString();
+                if (data.card_number) {
+                    $('withdrawCard').value = data.card_number;
+                }
+                return;
+            }
+
+            if (action === 'withdraw_request_sent') {
+                showStatus(withdrawStatus,
+                    `✅ درخواست برداشت ثبت شد!\n🆔 ${data.request_id || ''}\n💰 ${data.amount || 0} سکه\n⏳ منتظر تأیید ادمین...`,
+                    'success');
+                $('withdrawAmount').value = '';
+                showToast('✅ درخواست برداشت ثبت شد', 'success');
+                return;
+            }
+
+            if (action === 'withdraw_approved') {
+                state.balance = data.new_balance || state.balance;
+                updateUI();
+                showStatus(withdrawStatus,
+                    `✅ برداشت تأیید شد!\n💰 ${data.amount || 0} سکه کسر شد.\nموجودی: ${state.balance.toLocaleString()} سکه`,
+                    'success');
+                showToast(`✅ برداشت ${data.amount || 0} سکه تأیید شد`, 'success');
+                return;
+            }
+
+            if (action === 'withdraw_rejected') {
+                showStatus(withdrawStatus,
+                    `❌ درخواست برداشت رد شد\nدلیل: ${data.reason || 'نامشخص'}\n📞 با پشتیبانی تماس بگیرید`, 'error');
+                showToast(`❌ برداشت رد شد: ${data.reason || 'نامشخص'}`, 'error');
+                return;
+            }
+
+            // ===== دعوت =====
+            if (action === 'invite_link') {
+                state.inviteLink = data.link || '';
+                inviteStatus.textContent = `📋 لینک دعوت شما:\n${state.inviteLink}`;
+                inviteStatus.className = 'text success';
+                $('getInviteBtn').style.display = 'none';
+                $('copyInviteBtn').style.display = 'block';
+                showToast('✅ لینک دریافت شد', 'success');
+                return;
+            }
+
+            // ===== پشتیبانی =====
+            if (action === 'support_sent') {
+                showStatus(supportStatus, '✅ پیام شما به پشتیبانی ارسال شد.\nبه زودی پاسخ داده می‌شود.', 'success');
+                showToast('✅ پیام به پشتیبانی ارسال شد', 'success');
+                return;
+            }
+
+            // ===== پیام عمومی =====
+            if (action === 'message') {
+                const target = document.querySelector('.section.active .status-box .text') || gameStatus;
+                showStatus(target, data.text || '📨 پیام از ربات', data.type || 'info');
+                if (data.type === 'error') showToast(data.text, 'error');
+                else if (data.type === 'success') showToast(data.text, 'success');
+                return;
+            }
+
+            console.log('📌 اکشن ناشناخته:', action);
+        }
+
+        function handleGameFinished(data) {
+            const winner = data.winner;
+            const myScore = data.my_score;
+            const oppScore = data.opp_score;
+            const betAmount = data.bet_amount;
+            const winAmount = data.win_amount || 0;
+            const newBalance = data.new_balance;
+
+            let msg = '';
+            if (winner === 'me') {
+                msg = `🎉 **تبریک! برنده شدید!**\n💰 سود: ${winAmount.toLocaleString()} سکه`;
+                state.balance = newBalance;
+            } else if (winner === 'opponent') {
+                msg = `😔 **شما باختید.**\n💪 دفعه بعد حتماً برنده می‌شوید!`;
+                state.balance = newBalance;
+            } else {
+                msg = `⚖️ **بازی مساوی شد.**\n💰 سکه‌ها بازگشت.`;
+                state.balance = newBalance;
+            }
+            msg += `\n📊 امتیاز نهایی: ${myScore} - ${oppScore}`;
+
+            showStatus(gameStatus, msg, winner === 'me' ? 'success' : (winner === 'opponent' ? 'error' : 'info'));
+            updateUI();
+            resetGameUI();
+            if (winner === 'me') showToast(`🎉 برنده شدید! ${winAmount.toLocaleString()} سکه`, 'success');
+            else if (winner === 'opponent') showToast('😔 باختید، دفعه بعد برنده می‌شوید', 'error');
+            else showToast('⚖️ بازی مساوی شد', 'info');
+        }
+
+        // ===== دریافت داده =====
+        tg.onEvent('dataReceived', function(data) {
+            try {
+                const parsed = JSON.parse(data);
+                handleBotData(parsed);
+            } catch (e) {
+                console.error('⚠️ خطا در parse:', e);
+                state.isWaitingForResponse = false;
+                showLoading(false);
+                showToast('⚠️ خطا در پردازش داده!', 'error');
+            }
+        });
+
+        window.addEventListener('message', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.from === 'bot' || data.action) handleBotData(data);
+            } catch (e) {}
+        });
+
+        // ===== مقداردهی اولیه =====
+        function init() {
+            const user = tg.initDataUnsafe?.user;
+            if (user) {
+                state.userId = user.id;
+                state.username = user.username || '';
+                state.firstName = user.first_name || 'کاربر';
+                $('userName').textContent = state.firstName;
+                $('userId').textContent = `🆔 ${state.userId}`;
+                $('userUsername').textContent = state.username ? `@${state.username}` : '@---';
+                $('userAvatar').textContent = state.firstName.charAt(0).toUpperCase();
+            }
+            
+            showLoading(true, '⏳ در حال دریافت اطلاعات...');
+            sendToBot({ action: 'get_user_data' });
+            showStatus(gameStatus, '🎮 آماده بازی', 'info');
+            resetGameUI();
+        }
+
+        init();
+        updateUI();
+        console.log('🚀 مینی‌اپ نهایی راه‌اندازی شد!');
+        console.log('👤 کاربر:', tg.initDataUnsafe?.user);
+    </script>
+</body>
+</html>
